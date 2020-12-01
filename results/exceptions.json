@@ -1,0 +1,38 @@
+[
+  {
+    "Id": 0,
+    "Kind": ""
+    "Desc": "Generic exception",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 1,
+    "Kind": "f-noun",
+    "Desc": "Feminine noun",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 2,
+    "Kind": "m-noun",
+    "Desc": "Masculine noun",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 3,
+    "Kind": "interj",
+    "Desc": "Interjection",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 4,
+    "Kind": "lang",
+    "Desc": "Foreign language",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 5,
+    "Kind": "abbrev",
+    "Desc": "Abbreviation",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+]
