@@ -1,7 +1,7 @@
 [
   {
     "Id": 0,
-    "Kind": ""
+    "Kind": "",
     "Desc": "Generic exception",
     "Author-Date": "HMoreira 01.12.2020"
   },
@@ -33,6 +33,12 @@
     "Id": 5,
     "Kind": "abbrev",
     "Desc": "Abbreviation",
+    "Author-Date": "HMoreira 01.12.2020"
+  },
+  {
+    "Id": 6,
+    "Kind": "letter-g",
+    "Desc": "Greek letter",
     "Author-Date": "HMoreira 01.12.2020"
   },
 ]
