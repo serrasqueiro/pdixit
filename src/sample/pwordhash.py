@@ -5,7 +5,7 @@
 Dumps words hashes
 """
 
-# pylint: disable=no-self-use, invalid-name
+# pylint: disable=no-self-use
 
 import sys
 import os.path
@@ -47,7 +47,7 @@ def dump_nick(out, err, nick):
         fname = os.path.join("..", "..", "results", f"strict-{nick}.lst")
     else:
         fname = nick
-    wset = dump_wordlist(out, err, nick, fname, ALPHABET_NUM, opts)
+    wset = dump_wordlist(out, nick, fname, ALPHABET_NUM, opts)
     queue = wset['queue']
     where, maxsize = wset['where'], wset['maxsize']
     for item in queue:
@@ -63,19 +63,25 @@ def dump_nick(out, err, nick):
             shown = f"{stats[size]}" if stats[size] else "0 (OK)"
         print(f"# Stat size={size} {shown}")
     # Dump exclusions not used
-    idx = 0
+    idx, unexcluded = 0, list()
     for word in sorted(wset['excl']['must'], key=str.casefold):
         if not word in wset['excl']['@used']:
-            err.write(f"# Warn: Unused exclusion: {word}\n")
+            unexcluded.append(word)
+    for word in unexcluded:
+        idx += 1
+        err.write(f"# Warn: Unused exclusion ({idx}/{len(unexcluded)}): {word}\n")
     # Dump final stat
     err.write(f"Maximum size for hash {where}: {maxsize}\n")
 
-
-def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
-    """ Dumps hash for each word in a file. """
-    enc = "ISO-8859-1"
-    show_all = bool(opts.get("show-all"))
+def dump_wordlist(out, nick:str, fname:str, arange:int, opts:dict) -> dict:
+    """ Prepare wordlist """
     queue, hshing = list(), list()
+    enc = "ISO-8859-1"
+    if nick:
+        lst_exc_fname = os.path.join(os.path.dirname(fname), "exc-" + nick + ".lst")
+        excl = from_exclusion_file(lst_exc_fname, enc, nick)
+    else:
+        excl = from_exclusion_file()
     wset = {
         'queue': queue,
         'hshing': hshing,
@@ -84,15 +90,16 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
         'hsh-capital': list(),	# hsh with (at least one) first letter capital
         'bysize': list(),
         'stats-bysize': dict(),
-        'excl': dict(),
+        'excl': excl,
         }
     lines = open(fname, "r", encoding=enc).readlines()
-    if nick:
-        lst_exc_fname = os.path.join(os.path.dirname(fname), "exc-" + nick + ".lst")
-        excl = from_exclusion_file(lst_exc_fname, enc, nick)
-    else:
-        excl = from_exclusion_file()
-    wset['excl'] = excl
+    wordlist(out, lines, arange, excl, opts, wset)
+    return wset
+
+def wordlist(out, lines:list, arange:int, excl:dict, opts:dict, wset:dict) -> bool:
+    """ Dumps hash for each word in a file. """
+    show_all = bool(opts.get("show-all"))
+    hshing, queue = wset['hshing'], wset['queue']
     words = [valid_word(word.rstrip('\n')) for word in lines if not word.startswith('#')]
     dct, bysize = dict(), dict()
     for size in range(3, 7+1, 1):
@@ -105,7 +112,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     for aword in words:
         word = char_map.simpler_ascii(aword, 1)
         s_word = char_map.simpler_ascii(aword)
-        hsh = word_hash(word)
+        hsh = word_hash(word, arange)
         #if hsh != 269:
         #    continue
         dct[hsh].append((word, s_word))
@@ -155,7 +162,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     wset['hsh-capital'] = infos
     wset['where'], wset['maxsize'] = where, maxsize
     if not show_all:
-        return wset
+        return True
     # Dump if requested:
     for size, hsh, rest in hshing:
         shown = ";".join(rest)
@@ -165,7 +172,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
             out.write(f"{shown}\n")
         else:
             wset['bysize'].append(shown)
-    return wset
+    return True
 
 
 def valid_word(aword) -> str:
@@ -185,8 +192,9 @@ def valid_exclusion(astr:str) -> bool:
     assert new.isalpha(), f"Invalid exclusion string (2): '{astr}' >>>{new}<<<"
     return True
 
-def word_hash(astr) -> int:
-    aval = calc_p_hash(astr, a_mod=FIRST_PRIME_1000) % 1000
+def word_hash(astr:str, arange:int) -> int:
+    """ Main hashing function """
+    aval = calc_p_hash(astr, a_mod=FIRST_PRIME_1000) % arange
     return aval
 
 
@@ -214,13 +222,17 @@ def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
 def exclude_roman_numbers(words) -> int:
     """ Extend words so that roman words are not hashed!
     """
+    # pylint: disable=line-too-long
     count = 0
-    # ("lvi", "lvii", "lxi", "lxii", "lxiv", "lxix", "lxvi", "lxvii")
-    for item in (
+    romans = (
+        "lii",
         "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
         "xi;xii;xiii;xis;xiv;xix",
+        "xci;xcii;xciv;xcix;xcvi;xcvii",
         "xv;xvi;xvii;xviii;xx;xxi;xxii;xxiii;xxiv;xxix;xxv;xxvi;xxvii;xxviii;xxx;xxxi;xxxii;xxxiii;xxxiv;xxxix;xxxv;xxxvi;xxxvii;xxxviii",
-        ):
+        "vi;vii",
+        )
+    for item in romans:
         there = item.split(";")
         for word in there:
             assert word
@@ -238,7 +250,6 @@ def was_excluded(word:str, excluded:dict, excl:dict) -> bool:
     used = excl['@used']
     if not word in excluded:
         return False
-    assert not word in used, f"Duplicate: {word}"
     if word in used:
         used[word] += 1
     else:

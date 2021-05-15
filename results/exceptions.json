@@ -41,4 +41,16 @@
     "Desc": "Greek letter",
     "Author-Date": "HMoreira 01.12.2020"
   },
+  {
+    "Id": 7,
+    "Kind": "a",
+    "Desc": "Acronym",
+    "Author-Date": "HMoreira 15.05.2021"
+  },
+  {
+    "Id": 8,
+    "Kind": "slang",
+    "Desc": "Slang",
+    "Author-Date": "HMoreira 15.05.2021"
+  }
 ]
