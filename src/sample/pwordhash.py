@@ -10,11 +10,12 @@ Dumps words hashes
 import sys
 import os.path
 from waxpage.redit import char_map
-from xywinter.lehash import calc_p_hash
+from xywinter.lehash import calc_p_hash, is_prime
 
 
 ALPHABET_NUM = 1000
 FIRST_PRIME_1000 = 1009		# First prime after 1000
+DEFAULT_TWO_LETTER_LANG = "en"
 
 
 
@@ -29,6 +30,8 @@ def run_main(out, err, args):
     """ Main run.
     """
     param = args
+    if not param:
+        param = [DEFAULT_TWO_LETTER_LANG]
     for nick in param:
         dump_nick(out, err, nick)
     return 0
@@ -112,6 +115,5 @@ def word_hash(astr) -> int:
 
 # Main script
 if __name__ == "__main__":
+    assert is_prime(FIRST_PRIME_1000)
     main()
-    assert is_prime(_FIRST_PRIME_1000)
-    assert next_prime(_ALPHABET_NUM) == _FIRST_PRIME_1000
