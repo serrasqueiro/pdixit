@@ -12,6 +12,7 @@ import os.path
 from waxpage.redit import char_map
 from xywinter.lehash import calc_p_hash, is_prime
 
+DEBUG = 0
 
 ALPHABET_NUM = 1000
 FIRST_PRIME_1000 = 1009		# First prime after 1000
@@ -29,15 +30,16 @@ def main():
 def run_main(out, err, args):
     """ Main run.
     """
+    debug = DEBUG
     param = args
     if not param:
         param = [DEFAULT_TWO_LETTER_LANG]
     for nick in param:
-        dump_nick(out, err, nick)
+        dump_nick(out, err, nick, debug)
     return 0
 
 
-def dump_nick(out, err, nick):
+def dump_nick(out, err, nick, debug=0) -> int:
     """ Dumps file or nick. """
     opts = {
         "show-all": True,
@@ -64,11 +66,24 @@ def dump_nick(out, err, nick):
         print(f"# Stat size={size} {shown}")
     # Dump exclusions not used
     idx = 0
+    d_usage = wset['excl']['@used']
     for word in sorted(wset['excl']['must'], key=str.casefold):
-        if not word in wset['excl']['@used']:
+        if not word in d_usage:
             err.write(f"# Warn: Unused exclusion: {word}\n")
     # Dump final stat
     err.write(f"Maximum size for hash {where}: {maxsize}\n")
+    s_stat = f"queue#={len(wset['queue'])}"
+    s_stat += f", maxsize={wset['maxsize']}"
+    s_stat += f", nwords={wset['nwords']}"
+    s_stat += f", used words={wset['nwords-used']}"
+    if debug > 0:
+        err.write(f"""
+fname='{fname}'
+{s_stat}
+
+d_usage: {d_usage}\n<--
+""")
+    return 0
 
 
 def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
@@ -80,6 +95,8 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
         'queue': queue,
         'hshing': hshing,
         'where': -1,
+        'nwords': 0,
+        'nwords-used': 0,
         'maxsize': -1,
         'hsh-capital': list(),	# hsh with (at least one) first letter capital
         'bysize': list(),
@@ -102,6 +119,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     for hsh in range(arange):
         dct[hsh] = list()
     last = ""
+    wset['nwords'] = len(words)
     for aword in words:
         word = char_map.simpler_ascii(aword, 1)
         s_word = char_map.simpler_ascii(aword)
@@ -137,7 +155,10 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
             words = bysize[size][hsh]
             if not words:
                 continue
-            rest = [word for word in words if word.islower() and not was_excluded(word, excluded, excl)]
+            rest = list()
+            for word in words:
+                if word.islower() and not was_excluded(word, excluded, excl):
+                    rest.append(word)
             if not rest:
                 continue
             candidates.append((size, hsh, rest))
@@ -158,6 +179,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
         return wset
     # Dump if requested:
     for size, hsh, rest in hshing:
+        wset['nwords-used'] += len(rest)
         shown = ";".join(rest)
         s_size = "-" if size == 0 else str(size)
         shown = f"bysize:{s_size} {hsh:>4} {shown}"
@@ -238,7 +260,6 @@ def was_excluded(word:str, excluded:dict, excl:dict) -> bool:
     used = excl['@used']
     if not word in excluded:
         return False
-    assert not word in used, f"Duplicate: {word}"
     if word in used:
         used[word] += 1
     else:
