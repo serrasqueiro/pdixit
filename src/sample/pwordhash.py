@@ -5,7 +5,7 @@
 Dumps words hashes
 """
 
-# pylint: disable=no-self-use, invalid-name
+# pylint: disable=unused-argument
 
 import sys
 import os.path
@@ -110,6 +110,7 @@ d_usage: {d_usage}\n<--
 
 def dump_wordlist(out, err, whash, opts:dict) -> dict:
     """ Dumps hash for each word in a file. """
+    # pylint: disable=line-too-long
     show_all = bool(opts.get("show-all"))
     wset = whash.infos.stats()
     queue, hshing = wset['queue'], wset['hshing']
@@ -201,6 +202,7 @@ def dump_wordlist(out, err, whash, opts:dict) -> dict:
 def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
     """ Dumps dir """
     #debug = 1
+    show_data = bool(opts.get("show-data"))
     adir = leandir.DirFiles(dirname)
     json_files = [[name, adir.path_at(name), []] for name in adir.files() if name in RES_JSON_FILES]
     exc_files = [[name, adir.path_at(name), []] for name in adir.files() if name.startswith("exc-")]
@@ -212,12 +214,14 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
     wexc = wexcept.WExcept(nick="exceptions.json")
     if json_files:
         for name, path, alist in json_files:
+            assert not alist
             wexc = wexcept.WExcept(path, name)
             is_ok = wexc.reader()
             if not is_ok:
                 print("Bogus exceptions:", path)
                 print(">>>", wexc.last_message())
                 return 5
+            print("Read:", name)
             wexc.simple_index("Kind")
     if debug > 0:
         print("Exceptions JSON,", wexc.jname(), ">>>", wexc.map())
@@ -227,13 +231,52 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
             print(f"Exception, id={an_id} Kind={kind}, Desc='{what['Desc']}'", "check id:", wexc.byname(kind))
     # Check if exceptions are well-formed
     for name, path, alist in exc_files:
-        print(">>>", name, path)
         excl = wordhash.from_exclusion_file(path, wexc.encoding())
+        print(f">>> {name} (at {path}): size: {len(excl['why'])}")
         for key in sorted(excl["why"], key=str.casefold):
             why = excl["why"][key]
+            s_why = why if why else "-"
+            an_id = wexc.byname(why)
             if debug > 0:
-                print("!", key, why if why else "-")
+                print("!", key, s_why, an_id)
+            if an_id < 0:
+                err.write(f"{name}: Unknown exception kind for '{s_why}'\n")
+    if not show_data:
+        return 0
+    exc_files_list = [name for name, _, _ in exc_files]
+    show_langs(out, err, adir, exc_files_list, opts)
     return 0
+
+def show_langs(out, err, adir, exc_files_list, opts):
+    """ Show 'strict-??.lst' """
+    for name in adir.files():
+        path = adir.path_at(name)
+        if not name.endswith(".lst"):
+            continue
+        if name in exc_files_list:
+            continue
+        out.write(f"# strict-name: {name}, path={path}\n")
+        whash = wordhash.WordHash()
+        whash.fname = path
+        wset = dump_wordlist(None, err, whash, opts)
+        data = list()
+        is_ok = dump_wset(out, err, wset, data)
+        assert is_ok
+        for line in data:
+            print(line)
+
+def dump_wset(out, err, wset, data) -> bool:
+    """ Dumps and sets"""
+    n_errs = 0
+    by_len = len("bysize:N")
+    for item in wset['bysize']:
+        if item[by_len-1] == "-":
+            n_errs += 1
+            err.write(f"Missing letter hash: {item}\n")
+            continue
+        astr = item[by_len+2:]
+        data.append(astr)
+    return n_errs <= 0
 
 # Main script
 if __name__ == "__main__":
