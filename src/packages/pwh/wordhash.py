@@ -91,15 +91,24 @@ class WordHash():
 
 def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
     """ Returns the dictionary of excluded words. """
+    reasons_why = dict()
     excl = {
         'must': dict(),
         '@used': dict(),
+        'why': reasons_why,
         }
     if not fname:
         return excl
     data = open(fname, "r", encoding=encoding).read()
     lines = data.splitlines(keepends=False)
-    words = [line.split("@")[0] for line in lines if valid_exclusion(line)]
+    words = list()
+    for line in lines:
+        if not valid_exclusion(line):
+            continue
+        tups = line.split("@", maxsplit=1)
+        word = tups[0]
+        words.append(word)
+        reasons_why[word] = tups[1]
     if nick == "en":
         exclude_roman_numbers(words)
     for word in words:
@@ -126,7 +135,8 @@ def exclude_roman_numbers(words) -> int:
         there = item.split(";")
         for word in there:
             assert word
-            assert word not in words, f"Duplicate exclusion: {word}"
+            if word in words:
+                continue
             if len(word) < 3:
                 continue
             words.append(word)

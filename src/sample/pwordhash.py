@@ -11,10 +11,13 @@ import sys
 import os.path
 from waxpage.redit import char_map
 import pwh.wordhash as wordhash
-
+import pwh.leandir as leandir
+import pwh.wexcept as wexcept
 
 DEBUG = 0
-
+RES_JSON_FILES = (
+    "exceptions.json",
+)
 
 def main():
     """ Main script.
@@ -35,6 +38,7 @@ def run_main(out, err, args):
     """ Main run.
     """
     debug = DEBUG
+    first = ""
     param = args
     opts = {
         "show-all": True,
@@ -46,8 +50,12 @@ def run_main(out, err, args):
             opts["show-data"] = True
             continue
         return None
-    if not param:
+    if param:
+        first = param[0]
+    else:
         param = [wordhash.DEFAULT_TWO_LETTER_LANG]
+    if os.path.isdir(first):
+        return dump_dir(out, err, first, param[1:], opts, debug)
     for nick in param:
         dump_nick(out, err, nick, opts, debug)
     return 0
@@ -190,6 +198,42 @@ def dump_wordlist(out, err, whash, opts:dict) -> dict:
             wset['bysize'].append(shown)
     return wset
 
+def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
+    """ Dumps dir """
+    #debug = 1
+    adir = leandir.DirFiles(dirname)
+    json_files = [[name, adir.path_at(name), []] for name in adir.files() if name in RES_JSON_FILES]
+    exc_files = [[name, adir.path_at(name), []] for name in adir.files() if name.startswith("exc-")]
+    if debug > 0:
+        print("Files:", adir.files())
+        print("json files:", json_files)
+        for triplet in adir.triplets():
+            print(triplet[0], f"(at: {triplet[1]})", triplet[4:])
+    wexc = wexcept.WExcept(nick="exceptions.json")
+    if json_files:
+        for name, path, alist in json_files:
+            wexc = wexcept.WExcept(path, name)
+            is_ok = wexc.reader()
+            if not is_ok:
+                print("Bogus exceptions:", path)
+                print(">>>", wexc.last_message())
+                return 5
+            wexc.simple_index("Kind")
+    if debug > 0:
+        print("Exceptions JSON,", wexc.jname(), ">>>", wexc.map())
+        for an_id in sorted(wexc.map()):
+            what = wexc.map()[an_id]
+            kind = what['Kind']
+            print(f"Exception, id={an_id} Kind={kind}, Desc='{what['Desc']}'", "check id:", wexc.byname(kind))
+    # Check if exceptions are well-formed
+    for name, path, alist in exc_files:
+        print(">>>", name, path)
+        excl = wordhash.from_exclusion_file(path, wexc.encoding())
+        for key in sorted(excl["why"], key=str.casefold):
+            why = excl["why"][key]
+            if debug > 0:
+                print("!", key, why if why else "-")
+    return 0
 
 # Main script
 if __name__ == "__main__":
