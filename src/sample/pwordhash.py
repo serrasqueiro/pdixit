@@ -19,11 +19,18 @@ FIRST_PRIME_1000 = 1009		# First prime after 1000
 DEFAULT_TWO_LETTER_LANG = "en"
 
 
-
 def main():
     """ Main script.
     """
     code = run_main(sys.stdout, sys.stderr, sys.argv[1:])
+    if code is None:
+        print("""pwordhash.py [options] [language]
+
+Language is either two letter ('en', 'pt', 'fr', ...) or full path for an 'strict-??.lst' file.
+
+Options are:
+   -v      Verbose; dump also dialet (@...hashes)
+""")
     sys.exit(code if code else 0)
 
 
@@ -32,18 +39,26 @@ def run_main(out, err, args):
     """
     debug = DEBUG
     param = args
+    opts = {
+        "show-all": True,
+        "show-data": False,
+        }
+    while param and param[0].startswith('-'):
+        if param[0] in ("-v", "--verbose"):
+            del param[0]
+            opts["show-data"] = True
+            continue
+        return None
     if not param:
         param = [DEFAULT_TWO_LETTER_LANG]
     for nick in param:
-        dump_nick(out, err, nick, debug)
+        dump_nick(out, err, nick, opts, debug)
     return 0
 
 
-def dump_nick(out, err, nick, debug=0) -> int:
+def dump_nick(out, err, nick, opts, debug=0) -> int:
     """ Dumps file or nick. """
-    opts = {
-        "show-all": True,
-        }
+    show_data = bool(opts.get("show-data")) and out
     # if nick is a two-letter, use e.g. ../../results/strict-pt.lst
     if len(nick) == 2 and nick.isalpha():
         fname = os.path.join("..", "..", "results", f"strict-{nick}.lst")
@@ -57,7 +72,8 @@ def dump_nick(out, err, nick, debug=0) -> int:
         if not shown:
             err.write(f"@ {hsh:>4} <empty>\n")
             continue
-        out.write(f"@ {hsh:>4} {shown}\n")
+        if show_data:
+            out.write(f"@ {hsh:>4} {shown}\n")
     stats = wset['stats-bysize']
     for size in sorted(stats):
         shown = f"{stats[size]}"
@@ -242,6 +258,7 @@ def exclude_roman_numbers(words) -> int:
         "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
         "xi;xii;xiii;xis;xiv;xix",
         "xv;xvi;xvii;xviii;xx;xxi;xxii;xxiii;xxiv;xxix;xxv;xxvi;xxvii;xxviii;xxx;xxxi;xxxii;xxxiii;xxxiv;xxxix;xxxv;xxxvi;xxxvii;xxxviii",
+        "xci;xcii;xciv;xcix;xcvi;xcvii",
         ):
         there = item.split(";")
         for word in there:
