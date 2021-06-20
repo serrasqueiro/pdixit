@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-# pwordhash.sample.py  (c)2021  Henrique Moreira
+# pwordhash.py  (c)2021  Henrique Moreira
 
 """
 Dumps words hashes
@@ -10,13 +10,10 @@ Dumps words hashes
 import sys
 import os.path
 from waxpage.redit import char_map
-from xywinter.lehash import calc_p_hash, is_prime
+import pwh.wordhash as wordhash
+
 
 DEBUG = 0
-
-ALPHABET_NUM = 1000
-FIRST_PRIME_1000 = 1009		# First prime after 1000
-DEFAULT_TWO_LETTER_LANG = "en"
 
 
 def main():
@@ -50,7 +47,7 @@ def run_main(out, err, args):
             continue
         return None
     if not param:
-        param = [DEFAULT_TWO_LETTER_LANG]
+        param = [wordhash.DEFAULT_TWO_LETTER_LANG]
     for nick in param:
         dump_nick(out, err, nick, opts, debug)
     return 0
@@ -64,7 +61,9 @@ def dump_nick(out, err, nick, opts, debug=0) -> int:
         fname = os.path.join("..", "..", "results", f"strict-{nick}.lst")
     else:
         fname = nick
-    wset = dump_wordlist(out, err, nick, fname, ALPHABET_NUM, opts)
+    whash = wordhash.WordHash(nick)
+    whash.fname = fname
+    wset = dump_wordlist(out, err, whash, opts)
     queue = wset['queue']
     where, maxsize = wset['where'], wset['maxsize']
     for item in queue:
@@ -81,7 +80,6 @@ def dump_nick(out, err, nick, opts, debug=0) -> int:
             shown = f"{stats[size]}" if stats[size] else "0 (OK)"
         print(f"# Stat size={size} {shown}")
     # Dump exclusions not used
-    idx = 0
     d_usage = wset['excl']['@used']
     for word in sorted(wset['excl']['must'], key=str.casefold):
         if not word in d_usage:
@@ -102,31 +100,17 @@ d_usage: {d_usage}\n<--
     return 0
 
 
-def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
+def dump_wordlist(out, err, whash, opts:dict) -> dict:
     """ Dumps hash for each word in a file. """
-    enc = "ISO-8859-1"
     show_all = bool(opts.get("show-all"))
-    queue, hshing = list(), list()
-    wset = {
-        'queue': queue,
-        'hshing': hshing,
-        'where': -1,
-        'nwords': 0,
-        'nwords-used': 0,
-        'maxsize': -1,
-        'hsh-capital': list(),	# hsh with (at least one) first letter capital
-        'bysize': list(),
-        'stats-bysize': dict(),
-        'excl': dict(),
-        }
-    lines = open(fname, "r", encoding=enc).readlines()
-    if nick:
-        lst_exc_fname = os.path.join(os.path.dirname(fname), "exc-" + nick + ".lst")
-        excl = from_exclusion_file(lst_exc_fname, enc, nick)
-    else:
-        excl = from_exclusion_file()
-    wset['excl'] = excl
-    words = [valid_word(word.rstrip('\n')) for word in lines if not word.startswith('#')]
+    wset = whash.infos.stats()
+    queue, hshing = wset['queue'], wset['hshing']
+    arange = whash.alpha_number()
+    assert arange >= 10, f"alpha_number() is usually 1000; at least 10; got {arange}"
+    whash.reader()
+    wset = whash.infos.stats()
+    wset['excl'] = whash.excl
+    words = [wordhash.valid_word(word.rstrip('\n')) for word in whash.lines if not word.startswith('#')]
     dct, bysize = dict(), dict()
     for size in range(3, 7+1, 1):
         bysize[size] = dict()
@@ -139,7 +123,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     for aword in words:
         word = char_map.simpler_ascii(aword, 1)
         s_word = char_map.simpler_ascii(aword)
-        hsh = word_hash(word)
+        hsh = wordhash.word_hash(word)
         #if hsh != 269:
         #    continue
         dct[hsh].append((word, s_word))
@@ -157,8 +141,8 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
         words = dct[hsh]
         shown = ';'.join([word for word, _ in words])
         queue.append((hsh, shown))
-    infos, excluded = list(), excl['must']
-    maxsize, where = -1, hsh
+    infos, excluded = list(), whash.excl['must']
+    maxsize, where = -1, 0
     # Stats
     wset['stats-bysize'][0] = 0
     for size in range(3, 7+1, 1):
@@ -173,7 +157,7 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
                 continue
             rest = list()
             for word in words:
-                if word.islower() and not was_excluded(word, excluded, excl):
+                if word.islower() and not wordhash.was_excluded(word, excluded, whash.excl):
                     rest.append(word)
             if not rest:
                 continue
@@ -194,7 +178,8 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     if not show_all:
         return wset
     # Dump if requested:
-    for size, hsh, rest in hshing:
+    for size, hsh, words in hshing:
+        rest = whash.best_words(words, hsh)
         wset['nwords-used'] += len(rest)
         shown = ";".join(rest)
         s_size = "-" if size == 0 else str(size)
@@ -206,85 +191,6 @@ def dump_wordlist(out, err, nick:str, fname:str, arange:int, opts:dict) -> dict:
     return wset
 
 
-def valid_word(aword) -> str:
-    """ Validate word, strictly """
-    assert aword.isalpha()
-    assert aword.strip() == aword
-    return aword
-
-def valid_exclusion(astr:str) -> bool:
-    """ Returns True if 'astr' is a valid exclusion string.
-    """
-    if astr.startswith("#"):
-        return False
-    bare = astr.replace("-", "").split("@")
-    assert 0 < len(bare) <= 2, f"Invalid exclusion string (1): '{astr}'"
-    new = "".join(bare)
-    assert new.isalpha(), f"Invalid exclusion string (2): '{astr}' >>>{new}<<<"
-    return True
-
-def word_hash(astr) -> int:
-    aval = calc_p_hash(astr, a_mod=FIRST_PRIME_1000) % 1000
-    return aval
-
-
-def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
-    """ Returns the dictionary of excluded words. """
-    excl = {
-        'must': dict(),
-        '@used': dict(),
-        }
-    if not fname:
-        return excl
-    data = open(fname, "r", encoding=encoding).read()
-    lines = data.splitlines(keepends=False)
-    words = [line.split("@")[0] for line in lines if valid_exclusion(line)]
-    if nick == "en":
-        exclude_roman_numbers(words)
-    for word in words:
-        for a_chr in word:
-            assert a_chr.isalpha() or ord(a_chr) >= 0xa0, f"Invalid char: {ord(a_chr)}d"
-        excl['must'][word] = True
-    if debug > 0:
-        print("excl:", sorted(excl['must'], key=str.casefold))
-    return excl
-
-def exclude_roman_numbers(words) -> int:
-    """ Extend words so that roman words are not hashed!
-    """
-    count = 0
-    # ("lvi", "lvii", "lxi", "lxii", "lxiv", "lxix", "lxvi", "lxvii")
-    for item in (
-        "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
-        "xi;xii;xiii;xis;xiv;xix",
-        "xv;xvi;xvii;xviii;xx;xxi;xxii;xxiii;xxiv;xxix;xxv;xxvi;xxvii;xxviii;xxx;xxxi;xxxii;xxxiii;xxxiv;xxxix;xxxv;xxxvi;xxxvii;xxxviii",
-        "xci;xcii;xciv;xcix;xcvi;xcvii",
-        ):
-        there = item.split(";")
-        for word in there:
-            assert word
-            assert word not in words, f"Duplicate exclusion: {word}"
-            if len(word) < 3:
-                continue
-            words.append(word)
-        #words.extend(there)
-        count += len(there)
-    return count
-
-def was_excluded(word:str, excluded:dict, excl:dict) -> bool:
-    """ Returns True if the word is part of the excluded words.
-    """
-    used = excl['@used']
-    if not word in excluded:
-        return False
-    if word in used:
-        used[word] += 1
-    else:
-        used[word] = 1
-    return True
-
-
 # Main script
 if __name__ == "__main__":
-    assert is_prime(FIRST_PRIME_1000)
     main()
