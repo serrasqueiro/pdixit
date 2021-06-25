@@ -1,0 +1,6 @@
+export PYTHONPATH=$HOME/anaceo/pdixit/src/packages:$HOME/anaceo/tinycode:$HOME/anaceo/tinyconf/packages
+
+rem set PYTHONPATH=D:\myprogs\git_repos\anaceo\pdixit\src\packages;D:\myprogs\git_repos\anaceo\pdixit\src\packages;D:\myprogs\git_repos\anaceo\tinycode;D:\myprogs\git_repos\anaceo\tinyconf\packages
+
+
+py pwordhash.py ../../results
