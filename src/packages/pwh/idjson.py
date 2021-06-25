@@ -27,6 +27,11 @@ class GenIds():
         """ Returns the encoding (string). """
         return self._encoding
 
+    def any_ok(self) -> bool:
+        """ Returns True if any _simple_uniq seems valid. """
+        is_ok = self._simple_uniq is not None
+        return is_ok
+
     @staticmethod
     def default_encoding() -> str:
         return "ISO-8859-1"

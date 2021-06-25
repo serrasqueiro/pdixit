@@ -60,7 +60,6 @@ def run_main(out, err, args):
         dump_nick(out, err, nick, opts, debug)
     return 0
 
-
 def dump_nick(out, err, nick, opts, debug=0) -> int:
     """ Dumps file or nick. """
     show_data = bool(opts.get("show-data")) and out
@@ -224,7 +223,7 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
             print("Read:", name)
             wexc.simple_index("Kind")
     if debug > 0:
-        print("Exceptions JSON,", wexc.jname(), ">>>", wexc.map())
+        print("Exceptions JSON,", wexc.jname(), ">>>", wexc.map(), "; any_ok():", wexc.any_ok())
         for an_id in sorted(wexc.map()):
             what = wexc.map()[an_id]
             kind = what['Kind']
@@ -236,6 +235,10 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
         for key in sorted(excl["why"], key=str.casefold):
             why = excl["why"][key]
             s_why = why if why else "-"
+            if not wexc.any_ok():
+                if debug > 0:
+                    print("?", key, s_why)
+                continue
             an_id = wexc.byname(why)
             if debug > 0:
                 print("!", key, s_why, an_id)
@@ -255,15 +258,24 @@ def show_langs(out, err, adir, exc_files_list, opts):
             continue
         if name in exc_files_list:
             continue
-        out.write(f"# strict-name: {name}, path={path}\n")
-        whash = wordhash.WordHash()
-        whash.fname = path
-        wset = dump_wordlist(None, err, whash, opts)
-        data = list()
-        is_ok = dump_wset(out, err, wset, data)
-        assert is_ok
-        for line in data:
-            print(line)
+        show_one_lang(out, err, path, name, opts)
+
+def show_one_lang(out, err, path, name, opts) -> list:
+    alist = list()
+    print(f"# strict-name: {name}, path={path}")
+    whash = wordhash.WordHash()
+    whash.fname = path
+    wset = dump_wordlist(None, err, whash, opts)
+    data = list()
+    is_ok = dump_wset(out, err, wset, data)
+    assert is_ok
+    for line in data:
+        shown = line + "\n"
+        if out is not None:
+            out.write(shown)
+        else:
+            alist.append(shown)
+    return alist
 
 def dump_wset(out, err, wset, data) -> bool:
     """ Dumps and sets"""
