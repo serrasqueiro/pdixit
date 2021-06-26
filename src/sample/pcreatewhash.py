@@ -8,6 +8,7 @@ Create Word hashes from .lst file(s)
 # pylint: disable=unused-argument
 
 import sys
+import os.path
 from xywinter.typeproxy import DictProxy
 import pwh.wordhash as wordhash
 import pwh.wordhashf as wordhashf
@@ -48,19 +49,49 @@ def run_main(out, err, args):
     del param[0]
     if param:
         return None
-    code = reader(out, err, path, opts, debug)
+    code, alash = reader(out, err, path, opts, debug)
     if code:
         err.write(f"Error-code {code}, handling: {path}\n")
+    else:
+        code = writer(out, err, (path, path + ".txt"), alash, debug)
+    return code
+
+def writer(out, err, paths, alash:dict, debug=0):
+    """ Write output language """
+    _, indicative_name = paths
+    lang = alash["lang"]
+    if not lang:
+        lang = "unknown"
+    if not lang.isalpha():
+        return 3 # Invalid language (string)
+    out_fname = os.path.join(os.path.dirname(indicative_name), f"whash-{lang}.txt")
+    if os.path.isfile(out_fname):
+        err.write(f"Cowardly refusing to overwrite: {out_fname}\n")
+        return 4
+    with open(out_fname, "wb") as fout:
+        s_all = whash_writer(alash)
+        fout.write(s_all.encode("ascii"))
     return 0
 
-def reader(out, err, path, opts, debug=0) -> int:
+def whash_writer(alash) -> str:
+    """ Language hash writer. """
+    result = ""
+    wthere = alash["word-to-hash"]
+    words = sorted(wthere, key=str.casefold)
+    for word in words:
+        hsh = wthere[word]
+        shown = f"{word} {hsh}\n"
+        result += shown
+    return result
+
+def reader(out, err, path, opts, debug=0) -> tuple:
     """
     :param out: output stream (may be None)
     :param err: error stream
     :param path: full path of .lst file
     :param opts: options
     :param debug: debug > 0 for showing debug
-    :return: error-code
+    :return: error-code, and the 'alash'
     """
     fname = path
     nick = wordhash.nick_from_name(fname)
@@ -70,12 +101,12 @@ def reader(out, err, path, opts, debug=0) -> int:
     if debug > 0:
         debug_dump_wset(wset)
     if not alist:
-        return 3
+        return 3, dict()
     show_data = bool(opts.get("show-data")) and out
     if show_data:
         for line in alist:
             out.write(line + "\n")
-    return 0
+    return 0, alash
 
 def debug_dump_wset(wset:dict):
     """ Debug: dump 'wset', a (word-hash) dictionary """
@@ -101,6 +132,7 @@ def lang_hash_create(nick, fname, opts, err) -> dict:
         "path": fname,
         "hashes": alist,
         "wset": wset,
+        "word-to-hash": wset['wthere'],
     }
     return adict
 

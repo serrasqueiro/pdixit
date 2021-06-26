@@ -13,6 +13,7 @@ from xywinter.lehash import calc_p_hash, is_prime
 ALPHABET_NUM = 1000
 FIRST_PRIME_1000 = 1009		# First prime after 1000
 DEFAULT_TWO_LETTER_LANG = "en"
+KEEP_ROMANS_LANGS = ("zz",)   # Languages to keep Roman numbers
 
 class WordSet():
     """ WordSet: class for word hashing statistics """
@@ -109,7 +110,7 @@ def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
         word = tups[0]
         words.append(word)
         reasons_why[word] = tups[1]
-    if nick == "en":
+    if not nick in KEEP_ROMANS_LANGS:
         exclude_roman_numbers(words)
     for word in words:
         for a_chr in word:
