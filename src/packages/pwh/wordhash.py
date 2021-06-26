@@ -8,6 +8,7 @@ Classes for Word Hashes
 # pylint: disable=unused-argument
 
 import os.path
+import pwh.upperwords as upperwords
 from xywinter.lehash import calc_p_hash, is_prime
 
 ALPHABET_NUM = 1000
@@ -110,7 +111,7 @@ def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
         word = tups[0]
         words.append(word)
         reasons_why[word] = tups[1]
-    if not nick in KEEP_ROMANS_LANGS:
+    if nick not in KEEP_ROMANS_LANGS:
         exclude_roman_numbers(words)
     for word in words:
         for a_chr in word:
@@ -125,14 +126,9 @@ def exclude_roman_numbers(words) -> int:
     """
     # pylint: disable=line-too-long
     count = 0
+    roman_seqs = upperwords.ROMAN_SEQS
     # ("lvi", "lvii", "lxi", "lxii", "lxiv", "lxix", "lxvi", "lxvii")
-    for item in (
-        "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
-        "vii;viii",
-        "xi;xii;xiii;xis;xiv;xix",
-        "xv;xvi;xvii;xviii;xx;xxi;xxii;xxiii;xxiv;xxix;xxv;xxvi;xxvii;xxviii;xxx;xxxi;xxxii;xxxiii;xxxiv;xxxix;xxxv;xxxvi;xxxvii;xxxviii",
-        "xci;xcii;xciv;xcix;xcvi;xcvii",
-        ):
+    for item in roman_seqs:
         there = item.split(";")
         for word in there:
             assert word

@@ -139,7 +139,9 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
         for an_id in sorted(wexc.map()):
             what = wexc.map()[an_id]
             kind = what['Kind']
-            print(f"Exception, id={an_id} Kind={kind}, Desc='{what['Desc']}'", "check id:", wexc.byname(kind))
+            print(f"Exception, id={an_id} Kind={kind}, Desc='{what['Desc']}'",
+                  "check id:",
+                  wexc.byname(kind))
     # Check if exceptions are well-formed
     for name, path, alist in exc_files:
         excl = wordhash.from_exclusion_file(path, wexc.encoding())

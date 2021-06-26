@@ -34,13 +34,20 @@ def run_main(out, err, args):
     debug = DEBUG
     param = args
     opts = {
+        "verbose": 0,
         "show-all": True,
         "show-data": False,
+        "force": False,
         }
     while param and param[0].startswith('-'):
         if param[0] in ("-v", "--verbose"):
             del param[0]
             opts["show-data"] = True
+            opts["verbose"] += 1
+            continue
+        if param[0] in ("-f",):
+            opts["force"] = True
+            del param[0]
             continue
         return None
     if not param:
@@ -53,11 +60,12 @@ def run_main(out, err, args):
     if code:
         err.write(f"Error-code {code}, handling: {path}\n")
     else:
-        code = writer(out, err, (path, path + ".txt"), alash, debug)
+        code = writer(out, err, (path, path + ".txt"), alash, opts, debug)
     return code
 
-def writer(out, err, paths, alash:dict, debug=0):
+def writer(out, err, paths, alash:dict, opts, debug=0):
     """ Write output language """
+    force_out = opts["force"]
     _, indicative_name = paths
     lang = alash["lang"]
     if not lang:
@@ -65,7 +73,9 @@ def writer(out, err, paths, alash:dict, debug=0):
     if not lang.isalpha():
         return 3 # Invalid language (string)
     out_fname = os.path.join(os.path.dirname(indicative_name), f"whash-{lang}.txt")
-    if os.path.isfile(out_fname):
+    if opts["verbose"] > 0:
+        print("# Output to:", out_fname)
+    if not force_out and os.path.isfile(out_fname):
         err.write(f"Cowardly refusing to overwrite: {out_fname}\n")
         return 4
     with open(out_fname, "wb") as fout:

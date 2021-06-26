@@ -117,7 +117,8 @@ def iterate_wording(hshing:list, wthere:dict):
     """ Updates word-to-hash ('wthere') """
     for _, hsh, wordlist in hshing:
         for word in wordlist:
-            assert not word in wthere, f"Duplicate word for hsh={hsh}, '{word}' (there: {wthere[word]})"
+            astr = f"Duplicate word for hsh={hsh}, '{word}' (there: {wthere[word]})"
+            assert not word in wthere, astr
             wthere[word] = hsh
 
 def word_subcalc(out, whash, hshing, wset:dict):
