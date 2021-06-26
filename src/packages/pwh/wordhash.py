@@ -186,6 +186,11 @@ def default_wordset_criterias() -> dict:
     return crit
 
 def nick_from_name(name:str, suffix:str=".lst") -> str:
+    """ Get language nick from a filename
+    :param name: name - full path name of a file (default extension: .lst)
+    :param suffix: extension
+    :return: the (two-letter) language nick
+    """
     if not name.endswith(suffix):
         return ""
     subname = name.replace("\\", "/").split("/")[-1]

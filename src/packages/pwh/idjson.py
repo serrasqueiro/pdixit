@@ -5,7 +5,7 @@
 Generic Classes for json/ id handling
 """
 
-# pylint: disable=unused-argument
+# pylint: disable=missing-function-docstring
 
 class GenIds():
     """ Generic IDs """
@@ -65,8 +65,9 @@ class GenIds():
                 if key in ("Id",):
                     continue
                 adict[key] = value
-            if an_id in self._id_map:
-                return f"Duplicate ID: '{an_id}', for: {adict}"
+            if uniq:
+                if an_id in self._id_map:
+                    return f"Duplicate ID: '{an_id}', for: {adict}"
             self._id_map[an_id] = adict
         return ""
 
