@@ -55,21 +55,25 @@ def run_main(out, err, args):
     else:
         param = [wordhash.DEFAULT_TWO_LETTER_LANG]
     if os.path.isdir(first):
-        return dump_dir(out, err, first, param[1:], opts, debug)
-    for nick in param:
-        dump_nick(out, err, nick, opts, debug)
+        params = param[1:]
+        if params:
+            return None
+        return dump_dir(out, err, first, params, opts, debug)
+    for name in param:
+        nick = name
+        # if nick is a two-letter, use e.g. ../../results/strict-pt.lst
+        if wordhash.valid_nick(nick):
+            fname = os.path.join("..", "..", "results", f"strict-{nick}.lst")
+        else:
+            fname = name
+            nick = wordhash.nick_from_name(name)
+        dump_nick(out, err, nick, fname, opts, debug)
     return 0
 
-def dump_nick(out, err, nick, opts, debug=0) -> int:
+def dump_nick(out, err, nick, fname, opts, debug=0) -> int:
     """ Dumps file or nick. """
     show_data = bool(opts.get("show-data")) and out
-    # if nick is a two-letter, use e.g. ../../results/strict-pt.lst
-    if len(nick) == 2 and nick.isalpha():
-        fname = os.path.join("..", "..", "results", f"strict-{nick}.lst")
-    else:
-        fname = nick
-    whash = wordhash.WordHash(nick)
-    whash.fname = fname
+    whash = wordhash.WordHash(nick, fname)
     wset = dump_wordlist(out, err, whash, opts)
     queue = wset['queue']
     where, maxsize = wset['where'], wset['maxsize']
@@ -201,7 +205,7 @@ def dump_wordlist(out, err, whash, opts:dict) -> dict:
 def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
     """ Dumps dir """
     #debug = 1
-    show_data = bool(opts.get("show-data"))
+    assert not param, "Unexpected parameters"
     adir = leandir.DirFiles(dirname)
     json_files = [[name, adir.path_at(name), []] for name in adir.files() if name in RES_JSON_FILES]
     exc_files = [[name, adir.path_at(name), []] for name in adir.files() if name.startswith("exc-")]
@@ -231,7 +235,7 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
     # Check if exceptions are well-formed
     for name, path, alist in exc_files:
         excl = wordhash.from_exclusion_file(path, wexc.encoding())
-        print(f">>> {name} (at {path}): size: {len(excl['why'])}")
+        print(f">>> {name} (at {path}, exceptions size: {len(excl['why'])})")
         for key in sorted(excl["why"], key=str.casefold):
             why = excl["why"][key]
             s_why = why if why else "-"
@@ -244,51 +248,59 @@ def dump_dir(out, err, dirname:str, param:list, opts, debug=0) -> int:
                 print("!", key, s_why, an_id)
             if an_id < 0:
                 err.write(f"{name}: Unknown exception kind for '{s_why}'\n")
-    if not show_data:
-        return 0
+    if not exc_files:
+        err.write(f"No files at: {dirname}\n")
+        return 2
+    if not json_files:
+        err.write(f"No exceptions.json at: {dirname}\n")
     exc_files_list = [name for name, _, _ in exc_files]
     show_langs(out, err, adir, exc_files_list, opts)
     return 0
 
 def show_langs(out, err, adir, exc_files_list, opts):
     """ Show 'strict-??.lst' """
+    show_data = bool(opts.get("show-data"))
     for name in adir.files():
         path = adir.path_at(name)
         if not name.endswith(".lst"):
             continue
         if name in exc_files_list:
             continue
-        show_one_lang(out, err, path, name, opts)
-
-def show_one_lang(out, err, path, name, opts) -> list:
-    alist = list()
-    print(f"# strict-name: {name}, path={path}")
-    whash = wordhash.WordHash()
-    whash.fname = path
-    wset = dump_wordlist(None, err, whash, opts)
-    data = list()
-    is_ok = dump_wset(out, err, wset, data)
-    assert is_ok
-    for line in data:
-        shown = line + "\n"
-        if out is not None:
+        nick = wordhash.nick_from_name(name)
+        print(f"# strict-name: {name}, path={path}; nick={nick}")
+        assert nick
+        alist = one_lang_list(path, nick, opts, err)
+        if not show_data:
+            print("Word-lines: {len(alist)}")
+            continue
+        assert alist
+        for line in alist:
+            shown = line + "\n"
             out.write(shown)
-        else:
-            alist.append(shown)
+
+def one_lang_list(path, nick, opts, err=None) -> list:
+    whash = wordhash.WordHash(nick, path)
+    wset = dump_wordlist(None, err, whash, opts)
+    alist = wset_words(wset, err)
     return alist
 
-def dump_wset(out, err, wset, data) -> bool:
+def wset_words(wset, err=None) -> list:
     """ Dumps and sets"""
+    data = list()
     n_errs = 0
     by_len = len("bysize:N")
     for item in wset['bysize']:
         if item[by_len-1] == "-":
             n_errs += 1
-            err.write(f"Missing letter hash: {item}\n")
+            if err:
+                err.write(f"Missing letter hash: {item}\n")
             continue
         astr = item[by_len+2:]
         data.append(astr)
-    return n_errs <= 0
+    if n_errs <= 0:
+        return data
+    err.write(f"#missing letter hashes: {n_errs}\n")
+    return list()
 
 # Main script
 if __name__ == "__main__":

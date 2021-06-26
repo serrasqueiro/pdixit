@@ -45,10 +45,10 @@ class WordSet():
 
 class WordHash():
     """ WordHash class """
-    def __init__(self, nick="", alpha_num=ALPHABET_NUM):
+    def __init__(self, nick="", fname="", alpha_num=ALPHABET_NUM):
         """ Initializer """
         self.nick = nick
-        self.fname = ""
+        self.fname = fname
         self.infos = WordSet()
         self.lines = list()
         self.excl = dict()
@@ -184,6 +184,18 @@ def default_wordset_criterias() -> dict:
         "no-more-than": 6,  # up to 5 words on a single hash
     }
     return crit
+
+def nick_from_name(name:str, suffix:str=".lst") -> str:
+    if not name.endswith(suffix):
+        return ""
+    subname = name.replace("\\", "/").split("/")[-1]
+    astr = subname[:-len(suffix)].split("-")[-1]
+    return astr
+
+def valid_nick(nick:str) -> bool:
+    """ Returns True if 'nick' is a valid language nick """
+    is_ok = len(nick) == 2 and nick.isalpha()
+    return is_ok
 
 # Main script
 if __name__ == "__main__":
