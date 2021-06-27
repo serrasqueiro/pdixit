@@ -107,19 +107,24 @@ def dump_wordlist(out, err, whash, opts:dict) -> dict:
     wset['hsh-capital'] = info_up
     wset['where'], wset['maxsize'] = where, maxsize
     wset['wthere'] = dict() # wset['hshing'][915] = ['word1', 'word2', ...]; here indexes a word to its hash
-    iterate_wording(wset['hshing'], wset['wthere'])
+    msg = iterate_wording(wset['hshing'], wset['wthere'])
+    assert msg == "", msg
     word_sub_info_upper(info_up, wset)
     if show_all:
         word_subcalc(out, whash, hshing, wset)
     return wset
 
-def iterate_wording(hshing:list, wthere:dict):
-    """ Updates word-to-hash ('wthere') """
+def iterate_wording(hshing:list, wthere:dict) -> str:
+    """ Updates word-to-hash ('wthere').
+    Returns a non-empty string to indicate an error.
+    """
     for _, hsh, wordlist in hshing:
         for word in wordlist:
-            astr = f"Duplicate word for hsh={hsh}, '{word}' (there: {wthere[word]})"
-            assert not word in wthere, astr
+            if word in wthere:
+                msg = f"Duplicate word for hsh={hsh}, '{word}' (there: {wthere[word]})"
+                return msg
             wthere[word] = hsh
+    return ""
 
 def word_subcalc(out, whash, hshing, wset:dict):
     """ Dump and/ or calculate nwords-used. """

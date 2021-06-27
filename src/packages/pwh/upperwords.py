@@ -13,6 +13,8 @@ UPPERCASE_VALID = (
 )
 
 ROMAN_SEQS = (
+    "iii",
+    "lii",
     "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
     "vii;viii",
     "xi;xii;xiii;xis;xiv;xix",

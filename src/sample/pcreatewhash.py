@@ -12,6 +12,7 @@ import os.path
 from xywinter.typeproxy import DictProxy
 import pwh.wordhash as wordhash
 import pwh.wordhashf as wordhashf
+from pwenvelop.whash import WHashEnvelope
 
 DEBUG = 0
 
@@ -60,7 +61,8 @@ def run_main(out, err, args):
     if code:
         err.write(f"Error-code {code}, handling: {path}\n")
     else:
-        code = writer(out, err, (path, path + ".txt"), alash, opts, debug)
+        to_out = out if opts["verbose"] else None
+        code = writer(to_out, err, (path, path + ".txt"), alash, opts, debug)
     return code
 
 def writer(out, err, paths, alash:dict, opts, debug=0):
@@ -73,14 +75,16 @@ def writer(out, err, paths, alash:dict, opts, debug=0):
     if not lang.isalpha():
         return 3 # Invalid language (string)
     out_fname = os.path.join(os.path.dirname(indicative_name), f"whash-{lang}.txt")
-    if opts["verbose"] > 0:
-        print("# Output to:", out_fname)
+    s_all = whash_writer(alash)
+    envelope = WHashEnvelope(lang, alash, s_all)
+    s_head = envelope.string()
+    if out:
+        out.write(f"# Output to: {out_fname}; {s_head}\n")
     if not force_out and os.path.isfile(out_fname):
         err.write(f"Cowardly refusing to overwrite: {out_fname}\n")
         return 4
     with open(out_fname, "wb") as fout:
-        s_all = whash_writer(alash)
-        fout.write(s_all.encode("ascii"))
+        fout.write((s_head + "\n" + s_all).encode("ascii"))
     return 0
 
 def whash_writer(alash) -> str:

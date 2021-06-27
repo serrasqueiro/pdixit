@@ -46,5 +46,17 @@
     "Kind": "roman",
     "Desc": "Roman counts",
     "Author-Date": "HMoreira 20.06.2021"
+  },
+  {
+    "Id": 8,
+    "Kind": "a",
+    "Desc": "Acronym",
+    "Author-Date": "HMoreira 15.05.2021"
+  },
+  {
+    "Id": 9,
+    "Kind": "slang",
+    "Desc": "Slang",
+    "Author-Date": "HMoreira 15.05.2021"
   }
 ]
