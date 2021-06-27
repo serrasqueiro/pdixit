@@ -8,11 +8,13 @@ Classes for Word Hashes
 # pylint: disable=unused-argument
 
 import os.path
+import pwh.upperwords as upperwords
 from xywinter.lehash import calc_p_hash, is_prime
 
 ALPHABET_NUM = 1000
 FIRST_PRIME_1000 = 1009		# First prime after 1000
 DEFAULT_TWO_LETTER_LANG = "en"
+KEEP_ROMANS_LANGS = ("zz",)   # Languages to keep Roman numbers
 
 class WordSet():
     """ WordSet: class for word hashing statistics """
@@ -45,10 +47,10 @@ class WordSet():
 
 class WordHash():
     """ WordHash class """
-    def __init__(self, nick="", alpha_num=ALPHABET_NUM):
+    def __init__(self, nick="", fname="", alpha_num=ALPHABET_NUM):
         """ Initializer """
         self.nick = nick
-        self.fname = ""
+        self.fname = fname
         self.infos = WordSet()
         self.lines = list()
         self.excl = dict()
@@ -109,7 +111,7 @@ def from_exclusion_file(fname="", encoding="", nick:str="en", debug=0) -> dict:
         word = tups[0]
         words.append(word)
         reasons_why[word] = tups[1]
-    if nick == "en":
+    if nick not in KEEP_ROMANS_LANGS:
         exclude_roman_numbers(words)
     for word in words:
         for a_chr in word:
@@ -124,14 +126,9 @@ def exclude_roman_numbers(words) -> int:
     """
     # pylint: disable=line-too-long
     count = 0
+    roman_seqs = upperwords.ROMAN_SEQS
     # ("lvi", "lvii", "lxi", "lxii", "lxiv", "lxix", "lxvi", "lxvii")
-    for item in (
-        "lvi;lvii;lxi;lxii;lxiv;lxix;lxvi;lxvii",
-        "vii;viii",
-        "xi;xii;xiii;xis;xiv;xix",
-        "xv;xvi;xvii;xviii;xx;xxi;xxii;xxiii;xxiv;xxix;xxv;xxvi;xxvii;xxviii;xxx;xxxi;xxxii;xxxiii;xxxiv;xxxix;xxxv;xxxvi;xxxvii;xxxviii",
-        "xci;xcii;xciv;xcix;xcvi;xcvii",
-        ):
+    for item in roman_seqs:
         there = item.split(";")
         for word in there:
             assert word
@@ -184,6 +181,23 @@ def default_wordset_criterias() -> dict:
         "no-more-than": 6,  # up to 5 words on a single hash
     }
     return crit
+
+def nick_from_name(name:str, suffix:str=".lst") -> str:
+    """ Get language nick from a filename
+    :param name: name - full path name of a file (default extension: .lst)
+    :param suffix: extension
+    :return: the (two-letter) language nick
+    """
+    if not name.endswith(suffix):
+        return ""
+    subname = name.replace("\\", "/").split("/")[-1]
+    astr = subname[:-len(suffix)].split("-")[-1]
+    return astr
+
+def valid_nick(nick:str) -> bool:
+    """ Returns True if 'nick' is a valid language nick """
+    is_ok = len(nick) == 2 and nick.isalpha()
+    return is_ok
 
 # Main script
 if __name__ == "__main__":
