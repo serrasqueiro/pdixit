@@ -234,19 +234,25 @@ def nicer_percent(num:int, denom:int, invalid="-1.0") -> str:
     return f"{sub:.2f}%"
 
 def json_out(table) -> str:
-    content = sorted(table, key=lambda k: k["Id"])
+    alist = sorted(table, key=lambda k: k["Id"])
+    content = json.dumps(alist, indent=2, sort_keys=True)
     return content
 
 def from_yearly(yearly:dict, genre:str):
-    result = dict()
+    result = list()
     adict = yearly[genre]
+    an_id = 0
     for year in adict:
-        item = dict()
-        akey = f'"{year}"'
-        item["Id"] = year
-        item["year"] = akey
-        item["count"] = yearly[genre][year]
-        result[akey] = item
+        an_id += 1
+        item = {
+            "Id": an_id,
+            "genre": genre,
+            "year": year,
+            "count": yearly[genre][year],
+        }
+        result.append(item)
+    # Usage example:
+    #	astr = json_out(from_yearly(yearly, 'm'))
     return result
 
 def default_out_dict() -> dict:
