@@ -3,4 +3,4 @@
 	url = git@github.com:serrasqueiro/babynames.git
 [submodule "names/data-babynames"]
 	path = names/data-babynames
-	url = git@github.com:hadley/data-baby-names.git
+	url = git@github.com:serrasqueiro/data-baby-names.git

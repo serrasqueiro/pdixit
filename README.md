@@ -61,6 +61,13 @@ _start_ stands for ...start using. It does not install aspell.
 Tbd.
 ~~~~
 
+# Names sub-project
+
+We have included a couple of sub-modules that handle _baby names_, specifically to allow expanding a pass dictionary with short (simple) first names of persons.
+
+To get the latest stuff, do:
+- `git submodule foreach "(git checkout master; git pull)"`
+
 
 `--`
 
