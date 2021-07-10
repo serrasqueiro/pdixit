@@ -1,0 +1,6 @@
+[submodule "names/babynames"]
+	path = names/babynames
+	url = git@github.com:serrasqueiro/babynames.git
+[submodule "names/data-babynames"]
+	path = names/data-babynames
+	url = git@github.com:hadley/data-baby-names.git
