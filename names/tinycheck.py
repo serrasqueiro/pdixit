@@ -37,7 +37,7 @@ def run(out, err, args:list) -> int:
     opts = {
         'states-json': F_STATES_HASH,
         'by-state-csv': F_BABY_BY_STATE,
-        '@out': dict(),
+        '@out': default_out_dict(),
     }
     msg = checker(opts)
     result = opts['@out']
@@ -57,18 +57,43 @@ def checker(opts:dict) -> str:
     states = adict
     csv_state = opts['by-state-csv']
     stt = tabular.csv.CSV(csv_state)
-    tidy_by_state(stt, states)
+    dbd = [states, opts['@out']]
+    tidy_by_state(stt, states, dbd)
     return ""
 
-def tidy_by_state(stt, states) -> str:
+def tidy_by_state(stt, states, dbd) -> str:
+    by_year = dict()
     for idx, tup in stt.rows:
         assert idx > 0
         abbrev, year, name, count, boy = tup
-        if name == "\xa0":
-            print(":::", idx, year)
+        if name == "\xa0" or count in ("NA",):
+            continue
         if abbrev not in states:
             return f"Invalid state abbreviation, line {idx}: '{abbrev}'"
+        if boy in ("boy", "girl"):
+            boy = boy == "boy"
+        else:
+            return f"Invalid genre, line {idx}: {tup}"
+        genre = "m" if boy else "f"
+        year = int(year)
+        count = int(count)
+        data = [name, genre, count]
+        if year not in by_year:
+            by_year[year] = dict()
+        key = f"{genre}:{name}"
+        if key in by_year[year]:
+            by_year[year][key][2] += count
+        else:
+            by_year[year][key] = data
+    if dbd:
+        dbd[1]['by-year'] = by_year
     return ""
+
+def default_out_dict() -> dict:
+    adict = {
+        'by-year': dict(),
+    }
+    return adict
 
 if __name__=="__main__":
     main()
