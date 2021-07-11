@@ -48,6 +48,7 @@ class WHashEnvelope(Envelope):
         self._prepare_header(wset, stats)
 
     def _prepare_header(self, wset:dict, stats:dict):
+        # pylint: disable=unused-argument
         nick = self._nick
         assert nick
         fix = FIX_VERSION
