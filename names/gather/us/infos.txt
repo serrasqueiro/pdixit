@@ -1,4 +1,5 @@
-# (c)2021  Henrique Moreira; gathered by tinycheck.py1981.m: 30% 1286248 of 1845799
+# (c)2021  Henrique Moreira; gathered by tinycheck.py
+1981.m: 30% 1286248 of 1845799
 1981.f: 47% 938582 of 1761842
 1982.m: 30% 1300583 of 1863917
 1982.f: 46% 957916 of 1780119

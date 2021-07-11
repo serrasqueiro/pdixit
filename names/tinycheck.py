@@ -32,6 +32,14 @@ def main():
 
 Without args:
   - checks data consistency within ../names/ directory.
+
+Uses mainly:
+  - {F_BABY_BY_STATE}
+    based on: [1]
+
+References:
++++
+[1] https://github.com/serrasqueiro/data-baby-names/blob/master/baby-names-by-state.csv
 """)
     sys.exit(0 if code < 0 else code)
 
@@ -74,7 +82,7 @@ def out_gather(infos:dict, outs:list, outputs) -> bool:
                 dump_names_dict(fout, there, yearly)
             is_ok = True
     # Best-effort write infos.txt
-    s_txt = """# (c)2021  Henrique Moreira; gathered by tinycheck.py"""
+    s_txt = "# (c)2021  Henrique Moreira; gathered by tinycheck.py\n"
     s_txt += '\n'.join(infos['year-info']) + '\n'
     try:
         with open(text_info, "w") as fout:
@@ -89,11 +97,13 @@ def dump_names_dict(fout, adict:dict, yearly=None):
     pre = " " * 4
     fout.write("{")
     g_last = ""
+    first_newline = ""
     for key in sorted(adict):
         for genre in sorted(adict[key], reverse=True):
             s_year = f'"{key}-{genre}"'
-            fout.write(f"\n{pre}],\n" if g_last else "\n")
+            fout.write(f"\n{pre}],\n" if g_last else first_newline)
             fout.write(f"\n{pre}{s_year}: [")
+            first_newline = "\n"
             last = ""
             for count, name in adict[key][genre]:
                 fout.write(",\n" if last else "\n")
