@@ -16,7 +16,7 @@ def to_list(adict:dict, first:int=1, there:str="There") -> list:
     if isinstance(adict, list):
         return adict
     assert isinstance(adict, dict)
-    keys = sorted(adict, key=str.casefold)
+    akeys = sorted(adict, key=str.casefold)
     idx = first
     result = list()
     assert there not in (
@@ -26,7 +26,7 @@ def to_list(adict:dict, first:int=1, there:str="There") -> list:
         s_there = there
     else:
         s_there = "There"
-    for key in keys:
+    for key in akeys:
         content = adict[key]
         item = {"Id": idx, "Name": key, s_there: content}
         result.append(item)

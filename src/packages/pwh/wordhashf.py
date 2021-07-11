@@ -142,6 +142,7 @@ def word_subcalc(out, whash, hshing, wset:dict):
 
 def word_sub_info_upper(info_up, wset:dict):
     """ Check if there is any gain by using upper-case words """
+    # pylint: disable=line-too-long
     # e.g. wset['bysize'][915] = 'bysize:6  915 agrido;burlar;cofiar;cometa;finito;houver'
     # by using word 'Midas', this reduces to 'bysize:5  915 Midas'
     _, updict = info_up

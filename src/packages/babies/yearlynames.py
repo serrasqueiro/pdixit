@@ -5,7 +5,7 @@
 Classes for handling 'names-by-year.csv'
 """
 
-# pylint: disable=unused-argument
+# pylint: disable=missing-function-docstring
 
 import json
 import pwh.idjson as idjson
