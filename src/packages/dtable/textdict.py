@@ -90,6 +90,13 @@ class TextDict(GenText):
             self._msg = msg
             return False
         assert "\r" not in data, f"CR found: '{path}'"
+        return self._process_data(data)
+
+    def processor(self, data:str) -> bool:
+        """ Makes data processing. """
+        return self._process_data(data)
+
+    def _process_data(self, data:str) -> bool:
         lines = data.splitlines(False)
         headers, payload = GenText._parse_lines(lines)
         header = headers[0] if headers else ""
@@ -132,7 +139,23 @@ class TextDict(GenText):
         self._liner = liner
         return True
 
+    def get_ids(self) -> list:
+        """ Return list of dictionaries ('Id', 'Key', 'Text') """
+        if self._ids is None:
+            return list()
+        return self._ids
+
+    def get_by_ids(self) -> list:
+        """ Returns list, ordered by Id(s) !
+        """
+        res = list()
+        for item in self._ids:
+            key, text = item['Key'], item['Text']
+            res.append((key, text))
+        return res
+
     def json_string(self) -> str:
+        """ Convert to json string (with new-lines). """
         return json_writer_by_id(self._ids)
 
 
