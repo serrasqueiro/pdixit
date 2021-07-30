@@ -5,7 +5,7 @@
 Word Hashes text-file reader!
 """
 
-# pylint: disable=missing-function-docstring
+# pylint: disable=missing-function-docstring, no-self-use
 
 FIX_VERSION = "V1"
 
@@ -28,12 +28,15 @@ class TxIO():
 
 class Words(TxIO):
     """ Simple text-file reader """
+    _by_num = None
+
     def __init__(self, nick:str="en"):
         """ Initializer """
         self._nick = nick
         self._msg, self._data = "", ""
         self._size = 0
         self.words, self._extra = list(), list()
+        self._by_num = dict()
         assert len(nick) >= 2 or nick in ("*",)
 
     def language_nick(self) -> str:
@@ -41,6 +44,31 @@ class Words(TxIO):
         """
         assert self._nick
         return self._nick
+
+    def by_num(self, value:int):
+        """ Returns the possible words for 'value'.
+        """
+        assert value >= 0
+        return self._by_num[value]
+
+    def hash_by_num(self) -> bool:
+        """ Hashes by number.
+        """
+        if not self.words:
+            return False
+        for word, str_num in self.words:
+            num = int(str_num)
+            assert num >= 0
+            if num in self._by_num:
+                self._by_num[num].append(word)
+            else:
+                self._by_num[num] = [word]
+        # Check consistency: no 'holes' in the indexes
+        last = sorted(self._by_num.keys())[-1] + 1
+        for num in range(last):
+            if num not in self._by_num:
+                return False
+        return True
 
     def reader(self, whash_fname:str="", stream=None) -> bool:
         version = FIX_VERSION
@@ -100,6 +128,7 @@ class Words(TxIO):
         return res
 
 class WordsA(Words):
+    """ Words, text-file reader, with ASCII notations. """
     def get_extra(self) -> list:
         """ Returns _extra -- the lines after '# ASCII', for e.g. 'whash-en-ascii.txt'
         """

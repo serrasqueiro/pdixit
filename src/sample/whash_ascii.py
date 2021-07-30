@@ -1,5 +1,5 @@
 #-*- coding: utf-8 -*-
-# whash-ascii.py  (c)2021  Henrique Moreira
+# whash_ascii.py  (c)2021  Henrique Moreira
 
 """
 Dumps words hashes, with ASCII symbols
