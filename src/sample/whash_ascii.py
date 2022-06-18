@@ -59,7 +59,7 @@ def go_gen_text(fname:str, outdir:str, opts) -> int:
     outname = os.path.join(outdir, base + "-ascii.txt")
     if verbose > 0:
         print(f"Input: '{fname}', Output: '{outname}'")
-    assert not base.endswith(("-", "."))
+    assert not base.endswith(("-", ".")), base
     return writer(outname, lines, enc)
 
 def writer(outname:str, lines:list, enc:str) -> int:
