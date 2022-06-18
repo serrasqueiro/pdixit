@@ -61,6 +61,12 @@ _start_ stands for ...start using. It does not install aspell.
 Tbd.
 ~~~~
 
+## Creating _whash_ (word-hashing text-file)
+1. Either you use dictraw/strict-en.lst, created (by this script _start_ command), or you use what is already at _results_ folder.
+1. `cd src/sample/`
+1. `python pcreatewhash.py ../../results/strict-en.lst`
+   + output will be at: ../../results/whash-en.txt
+
 # Names sub-project
 
 We have included a couple of sub-modules that handle _baby names_, specifically to allow expanding a pass dictionary with short (simple) first names of persons.

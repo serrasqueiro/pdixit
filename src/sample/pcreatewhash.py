@@ -25,6 +25,7 @@ def main():
 
 Options are:
    -v      Verbose
+   -f      Force overwrite
 """)
     sys.exit(code if code else 0)
 

@@ -25,3 +25,9 @@ Where:
   + .0 indicates that there no words of size 6 nor 7
   + (note that this may end with .0.1 in case there is 1 word with size 7);
 - 2146 indicates the size, in octets, of the entire file, excluding the first line (header).
+
+## Creating _whash_ (word-hashing text-file)
+Example, using a strict list:
+- `python pcreatewhash.py -f ../../results/strict-en.lst`
+  + will create ../../results/whash-en.txt
+  + `-f` forces creation of whash-en.txt, even if file already exists.
